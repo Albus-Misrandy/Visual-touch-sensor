@@ -1,6 +1,8 @@
+import cv2
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
 
 
 def numpy_to_tensor(img):
@@ -30,7 +32,7 @@ def tensor_to_numpy(tensor):
         image_array = image_array.transpose((1, 2, 0))
     elif image_array.shape[0] == 1:
         image_array = image_array.squeeze(0)
-    print(image_array.shape)
+    # print(image_array.shape)
     return image_array
 
 
@@ -77,3 +79,31 @@ def plot_muti_curve(x_data, y_data, title, xlabel, ylabel, colors=None, labels=N
     plt.legend()
     plt.grid(True)  # 可选：添加网格线
     plt.show()
+
+def crop_pictures(img, mask):
+    img = np.array(img)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    # # 转灰度图
+    # gray = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
+
+    # 二值化：把白色区域提取出来
+    _, binary = cv2.threshold(mask, 200, 255, cv2.THRESH_BINARY)
+    
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        print("未找到任何轮廓")
+        return None
+    
+    # 找面积最大的轮廓
+    largest_contour = max(contours, key=cv2.contourArea)
+    
+    # 获取最小外接矩形
+    x, y, w, h = cv2.boundingRect(largest_contour)
+    
+    # 裁剪图像
+    cropped = img[y:y+h, x:x+w]
+    cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
+    cropped = Image.fromarray(cropped)
+    cropped = cropped.resize((640, 480))
+    cropped.show()
+        

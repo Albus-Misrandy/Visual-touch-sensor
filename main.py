@@ -43,6 +43,8 @@ def Segment_train(device, epochs, train_loader, model, optimizer, criterion):
 
         epoch_loss = running_loss / len(train_loader)
         print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {epoch_loss:.4f}')
+        
+        torch.cuda.empty_cache()
 
     torch.save(model.state_dict(), args.model_path)
 
@@ -50,6 +52,10 @@ def Segment_train(device, epochs, train_loader, model, optimizer, criterion):
 def predict(device, model, model_path, image_path):
     model.load_state_dict(torch.load(model_path))
     model.eval()
+    
+    # 开启cudnn加速
+    # print(torch.backends.cudnn.benchmark)
+    torch.backends.cudnn.benchmark = True
 
     image = Image.open(image_path).convert('RGB')
     image_tensor = numpy_to_tensor(image).unsqueeze(0).to(device)
@@ -58,16 +64,19 @@ def predict(device, model, model_path, image_path):
         output = model(image_tensor)
         output = output.squeeze(0)
         pred = torch.sigmoid(output)
-        mask = (pred > 0.6).float()
+        mask = (pred > 0.1).float()
 
         mask_np = tensor_to_numpy(mask)
 
         # # 创建并保存mask图像
         mask_image = Image.fromarray(mask_np)
         mask_image.show("Mask")
+        # mask_image.save("test.png")
+        return mask_np
 
 
 if __name__ == '__main__':
+    torch.cuda.empty_cache()
     # Define the parameters of the model training.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = LightweightUNet().to(device)
@@ -77,5 +86,7 @@ if __name__ == '__main__':
     train_dataset = SegmentationDataset(args.origin_path, args.mask_path)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    Segment_train(device, args.Iterations, train_loader, model, optimizer, criterion)
-    # predict(device, model, args.model_path, "Image_Sampling/captured_images/58.jpg")
+    # Segment_train(device, args.Iterations, train_loader, model, optimizer, criterion)
+    img = predict(device, model, args.model_path, "Image_Sampling/captured_images/56.jpg")
+    ori = Image.open("Image_Sampling/captured_images/56.jpg").convert('RGB')
+    crop_pictures(ori, img)
