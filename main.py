@@ -3,10 +3,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchvision import transforms
 from PIL import Image
 from Dataset.Dataset import SegmentationDataset
 from models.Light_UNet import LightweightUNet
+from utils.Visualization import *
 
 parser = argparse.ArgumentParser(description="Vision Touch Sensor.")
 
@@ -14,7 +14,7 @@ parser.add_argument("--origin_path", type=str, default="Dataset/Silicone_segment
                     help="Original photos' path.")
 parser.add_argument("--mask_path", type=str, default="Dataset/Silicone_segment/labels", help="Mask photos' path.")
 parser.add_argument("--batch_size", type=int, default=8, help="Value of batch size")
-parser.add_argument("--Iterations", type=int, default=5, help="Training iterations.")
+parser.add_argument("--Iterations", type=int, default=30, help="Training iterations.")
 parser.add_argument("--learning_rate", type=float, default=1e-3, help="Value of Learning rate.")
 parser.add_argument("--model_path", type=str, default="models/Best_BiSeNet.pth", help="Model path.")
 
@@ -29,8 +29,10 @@ def Segment_train(device, epochs, train_loader, model, optimizer, criterion):
             images = images.to(device)
             masks = masks.to(device)
             # print(images.shape)
+            # print(masks.shape)
 
             outputs = model(images)
+            # print(outputs.shape)
             loss = criterion(outputs, masks)
             optimizer.zero_grad()
             loss.backward()
@@ -49,23 +51,18 @@ def predict(device, model, model_path, image_path):
     model.load_state_dict(torch.load(model_path))
     model.eval()
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-
     image = Image.open(image_path).convert('RGB')
-    image_tensor = transform(image).unsqueeze(0).to(device)
+    image_tensor = numpy_to_tensor(image).unsqueeze(0).to(device)
 
     with torch.no_grad():
         output = model(image_tensor)
+        output = output.squeeze(0)
         pred = torch.sigmoid(output)
-        mask = (pred > 0.5).float()
+        mask = (pred > 0.6).float()
 
-        # 转换为可保存的numpy数组
-        mask_np = mask[0][0].cpu().numpy()  # 去除batch和channel维度
-        mask_np = (mask_np * 255).astype(np.uint8)  # 转为0-255的uint8格式
+        mask_np = tensor_to_numpy(mask)
 
-        # 创建并保存mask图像
+        # # 创建并保存mask图像
         mask_image = Image.fromarray(mask_np)
         mask_image.show("Mask")
 

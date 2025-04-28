@@ -1,7 +1,8 @@
 import os
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms
+from utils.Visualization import *
 
 
 class SegmentationDataset(Dataset):
@@ -10,9 +11,6 @@ class SegmentationDataset(Dataset):
         self.mask_dir = mask_dir
         self.images = sorted(os.listdir(image_dir))
         self.masks = sorted(os.listdir(mask_dir))
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-        ])
 
     def __len__(self):
         return len(self.images)
@@ -24,11 +22,10 @@ class SegmentationDataset(Dataset):
         image = Image.open(img_path).convert("RGB")
         mask = Image.open(mask_path).convert("L")
 
-        image = self.transform(image)
-        mask = self.transform(mask)
-        # print(image)
+        image = numpy_to_tensor(image)
+        mask = numpy_to_tensor(mask)
 
         # 二值化mask
-        mask = (mask > 0.5).float()
+        mask = (mask > 0.1).float()
 
         return image, mask
