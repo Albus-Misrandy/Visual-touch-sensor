@@ -15,8 +15,8 @@ os.makedirs(save_dir_left, exist_ok=True)
 os.makedirs(save_dir_right, exist_ok=True)
 
 # 打开两个摄像头
-cap_left = cv2.VideoCapture(1)
-cap_right = cv2.VideoCapture(0)
+cap_left = cv2.VideoCapture(0)
+cap_right = cv2.VideoCapture(1)
 
 if not cap_left.isOpened():
     print("无法打开摄像头1")

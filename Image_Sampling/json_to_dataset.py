@@ -21,7 +21,7 @@ if __name__ == '__main__':
     pngs_path = "../Dataset/Silicone_segment/labels"
     # classes     = ["_background_","person", "car", "motorbike", "dustbin","chair","fire_hydrant","tricycle",
     # "bicycle","stone"]
-    classes = ["_background_", "Silicone"]
+    classes = ["_background_", "Unpressed"]
 
     count = os.listdir("./captured_images")
     for i in range(0, len(count)):
