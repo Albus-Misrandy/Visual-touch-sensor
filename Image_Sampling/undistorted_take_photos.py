@@ -39,8 +39,24 @@ ret2, frame_right = cap_right.read()
 h_l, w_l = frame_left.shape[:2]
 h_r, w_r = frame_right.shape[:2]
 
-map1_l, map2_l = cv2.initUndistortRectifyMap(mtx_l, dist_l, None, mtx_l, (w_l, h_l), cv2.CV_16SC2)
-map1_r, map2_r = cv2.initUndistortRectifyMap(mtx_r, dist_r, None, mtx_r, (w_r, h_r), cv2.CV_16SC2)
+R1 = np.array([[0.99902054, -0.03584055, -0.02595043],
+              [0.03578368, 0.99935604, -0.00265274],
+              [0.02602879, 0.00172154, 0.99965971]])
+
+R2 = np.array([[9.96774172e-01, -6.17246664e-02, -5.12963500e-02],
+              [6.18368289e-02, 9.98086091e-01, 6.00880232e-04],
+              [5.11610843e-02, -3.77094552e-03, 9.98683295e-01]])
+
+P1 = np.array([[378.63796211, 0, 368.74058151, 0],
+               [0, 378.63796211, 255.47016335, 0],
+               [0, 0, 1, 0]])
+
+P2 = np.array([[3.78637962e+02, 0, 3.68740582e+02, 4.98233488e+03],
+               [0, 3.78637962e+02, 2.55470163e+02, 0],
+               [0, 0, 1, 0]])
+
+map1_l, map2_l = cv2.initUndistortRectifyMap(mtx_l, dist_l, R1, P1, (w_l, h_l), cv2.CV_16SC2)
+map1_r, map2_r = cv2.initUndistortRectifyMap(mtx_r, dist_r, R2, P2, (w_r, h_r), cv2.CV_16SC2)
 
 print("映射表已生成，按 'c' 拍照，按 'ESC' 退出")
 
@@ -56,9 +72,14 @@ while True:
     undistorted_l = cv2.remap(frame_l, map1_l, map2_l, interpolation=cv2.INTER_LINEAR)
     undistorted_r = cv2.remap(frame_r, map1_r, map2_r, interpolation=cv2.INTER_LINEAR)
 
+    combined = np.hstack((undistorted_l, undistorted_r))
+    y = combined.shape[0] // 2
+    cv2.line(combined, (0, y), (combined.shape[1], y), (0, 255, 0), 2)
+
     # 实时预览
     cv2.imshow("Left Undistorted", undistorted_l)
     cv2.imshow("Right Undistorted", undistorted_r)
+    cv2.imshow('Stereo View', combined)
 
     key = cv2.waitKey(1) & 0xFF
 

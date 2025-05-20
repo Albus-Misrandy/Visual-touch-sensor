@@ -100,4 +100,8 @@ R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(
     R, T
 )
 
+print("\nR1:", R1)
+print("\nR2:", R2)
+print("\nP1:", P1)
+print("\nP2:", P2)
 print("\n立体矫正矩阵 Q:\n", Q)
