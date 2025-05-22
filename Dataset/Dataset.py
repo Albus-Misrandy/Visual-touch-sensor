@@ -29,3 +29,19 @@ class SegmentationDataset(Dataset):
         mask = (mask > 0.1).float()
 
         return image, mask
+
+
+class UnpressImageDataset(Dataset):
+    def __init__(self, image_dir):
+        self.img_dir = image_dir
+        self.images = sorted(os.listdir(image_dir))
+
+    def __len__(self):
+        return len(self.images)
+    
+    def __getitem__(self, index):
+        img_path = os.path.join(self.img_dir, self.images[index])
+        image = Image.open(img_path).convert("RGB")
+        image = numpy_to_tensor(image)
+
+        return image
