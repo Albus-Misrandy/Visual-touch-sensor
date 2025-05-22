@@ -38,10 +38,11 @@ class UnpressImageDataset(Dataset):
 
     def __len__(self):
         return len(self.images)
-    
+
     def __getitem__(self, index):
         img_path = os.path.join(self.img_dir, self.images[index])
         image = Image.open(img_path).convert("RGB")
         image = numpy_to_tensor(image)
+        # print(image.shape)
 
         return image

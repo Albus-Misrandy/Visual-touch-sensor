@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from PIL import Image
+from skimage.metrics import structural_similarity as ssim
 from Dataset.Dataset import UnpressImageDataset
 # from models.Light_UNet import LightweightUNet
 from models.LiteTactileNet import LiteTactileNet
@@ -12,8 +13,8 @@ from utils.Visualization import *
 parser = argparse.ArgumentParser(description="Vision Touch Sensor.")
 
 parser.add_argument("--data_path", type=str, default="Image_Sampling/captured_images", help="Unpressed image data.")
-parser.add_argument("--batch_size", type=int, default=8, help="Value of batch size")
-parser.add_argument("--Iterations", type=int, default=30, help="Training iterations.")
+parser.add_argument("--batch_size", type=int, default=16, help="Value of batch size")
+parser.add_argument("--Iterations", type=int, default=100, help="Training iterations.")
 parser.add_argument("--learning_rate", type=float, default=1e-4, help="Value of Learning rate.")
 parser.add_argument("--model_path", type=str, default="models/FastTactileNet.pth", help="Model path.")
 
@@ -33,7 +34,7 @@ def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_l
                 
                 # 动态阈值目标：μ+2σ原则
                 errors = torch.mean((recon-images)**2, dim=[1,2,3])
-                target = errors.mean() + 2*errors.std()
+                target = errors.mean() + 2 * errors.std()
                 loss_threshold = threshold_loss(threshold.squeeze(), target)
                 
                 total_loss = loss_recon + 0.5*loss_threshold
@@ -48,8 +49,52 @@ def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_l
         print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {epoch_loss:.4f}')
         torch.cuda.empty_cache()
 
+    val = evaluate_reconstruction(model, train_loader, device)
+    print(f"MSE:{val['mse_mean']:.4f}±{val['mse_std']:.4f}")
+    print(f"SSIM: {val['ssim_mean']:.4f}±{val['ssim_std']:.4f}")
     torch.save(model.state_dict(), args.model_path)
 
+
+def evaluate_reconstruction(model, dataloader, device):
+    model.eval()
+    mse_losses = []
+    ssim_scores = []
+
+    with torch.no_grad():
+        for batch in dataloader:
+            inputs = batch.to(device)
+            reconstructions, _ = model(inputs)
+
+            # 计算MSE
+            mse = torch.mean((inputs - reconstructions) ** 2, dim=[1, 2, 3])
+            mse_losses.extend(mse.cpu().numpy())
+
+            # 计算SSIM
+            inputs_np = inputs.cpu().numpy().transpose(0, 2, 3, 1)
+            recon_np = reconstructions.cpu().numpy().transpose(0, 2, 3, 1)
+
+            for i in range(inputs_np.shape[0]):
+                # 动态计算窗口大小
+                H, W, _ = inputs_np[i].shape
+                win_size = min(7, H, W)
+                win_size = win_size if win_size % 2 else win_size - 1  # 确保奇数
+                win_size = max(win_size, 3)  # 最小3x3
+
+                ssim_val = ssim(
+                    inputs_np[i],
+                    recon_np[i],
+                    win_size=win_size,
+                    channel_axis=-1,  # 替换multichannel参数
+                    data_range=1.0
+                )
+                ssim_scores.append(ssim_val)
+
+    return {
+        'mse_mean': np.mean(mse_losses),
+        'mse_std': np.std(mse_losses),
+        'ssim_mean': np.mean(ssim_scores),
+        'ssim_std': np.std(ssim_scores)
+    }
 
 def Segment_train(device, epochs, train_loader, model, optimizer, criterion):
     for epoch in range(epochs):
