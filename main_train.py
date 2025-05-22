@@ -20,7 +20,7 @@ parser.add_argument("--model_path", type=str, default="models/FastTactileNet.pth
 args = parser.parse_args()
 
 
-def train_FastTactileNet(device, epochs, train_loader, model, optimizer, recon_loss, threshold_loss):
+def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_loss, threshold_loss):
     for epoch in range(epochs):
         running_loss = 0.0
         model.train()
@@ -120,6 +120,7 @@ if __name__ == '__main__':
     train_dataset = UnpressImageDataset(args.data_path)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
+    train_LiteTactileNet(device, args.Iterations, train_loader, model, optimizer, recon_loss, threshold_loss)
 
 #     # Segment_train(device, args.Iterations, train_loader, model, optimizer, criterion)
 #     img = predict(device, model, args.model_path, "Image_Sampling/captured_images/56.jpg")
