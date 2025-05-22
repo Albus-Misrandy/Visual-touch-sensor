@@ -22,6 +22,7 @@ args = parser.parse_args()
 
 
 def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_loss, threshold_loss):
+    loss_list = []
     for epoch in range(epochs):
         running_loss = 0.0
         model.train()
@@ -44,6 +45,7 @@ def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_l
             scaler.update()
             
             running_loss += total_loss.item()
+            loss_list.append(running_loss)
         
         epoch_loss = running_loss / len(train_loader)
         print(f'Epoch [{epoch + 1}/{epochs}], Train Loss: {epoch_loss:.4f}')
@@ -53,6 +55,7 @@ def train_LiteTactileNet(device, epochs, train_loader, model, optimizer, recon_l
     print(f"MSE:{val['mse_mean']:.4f}±{val['mse_std']:.4f}")
     print(f"SSIM: {val['ssim_mean']:.4f}±{val['ssim_std']:.4f}")
     torch.save(model.state_dict(), args.model_path)
+    plot_muti_curve([range(epochs)], [loss_list], "Training Loss", "Epoch", "Loss", ["blue"], ["loss_curve"])
 
 
 def evaluate_reconstruction(model, dataloader, device):
