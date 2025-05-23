@@ -5,16 +5,20 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-def numpy_to_tensor(img):
+def numpy_to_tensor(img, device=None):
     img_numpy = np.array(img)  # 从img转换为NumPy数组
     if img_numpy.ndim == 3:
         img_numpy = img_numpy.transpose((2, 0, 1))  # （可选）通道变换 (H, W, C) -> (C, H, W)
         tensor = torch.from_numpy(img_numpy).float()  # 将图像从numpy数组转换为PyTorch张量
+        if device:
+            tensor = tensor.to(device)
         tensor = tensor.to(torch.float32) / 255.0  # （可选）在0-1范围内标准化图像
         return tensor
     if img_numpy.ndim == 2:
         img_numpy = np.expand_dims(img_numpy, axis=0)  # （可选）通道变换 (H, W, C) -> (C, H, W)
         tensor = torch.from_numpy(img_numpy).float()  # 将图像从numpy数组转换为PyTorch张量
+        if device:
+            tensor = tensor.to(device)
         tensor = tensor.to(torch.float32) / 255.0  # （可选）在0-1范围内标准化图像
         return tensor
 
@@ -80,6 +84,7 @@ def plot_muti_curve(x_data, y_data, title, xlabel, ylabel, colors=None, labels=N
     plt.grid(True)  # 可选：添加网格线
     plt.show()
 
+
 def crop_pictures(img, mask):
     img = np.array(img)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
@@ -88,22 +93,28 @@ def crop_pictures(img, mask):
 
     # 二值化：把白色区域提取出来
     _, binary = cv2.threshold(mask, 200, 255, cv2.THRESH_BINARY)
-    
+
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
         print("未找到任何轮廓")
         return None
-    
+
     # 找面积最大的轮廓
     largest_contour = max(contours, key=cv2.contourArea)
-    
+
     # 获取最小外接矩形
     x, y, w, h = cv2.boundingRect(largest_contour)
-    
+
     # 裁剪图像
-    cropped = img[y:y+h, x:x+w]
+    cropped = img[y:y + h, x:x + w]
     cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
     cropped = Image.fromarray(cropped)
     cropped = cropped.resize((640, 480))
     cropped.show()
-        
+
+
+def combine_frame(undistorted_l, undistorted_r):
+    combined = np.hstack((undistorted_l, undistorted_r))
+    y = combined.shape[0] // 2
+    cv2.line(combined, (0, y), (combined.shape[1], y), (0, 0, 255), 2)
+    return combined

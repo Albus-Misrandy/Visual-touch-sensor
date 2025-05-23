@@ -92,6 +92,9 @@ print("右相机畸变系数:\n", dist_r)
 print("旋转矩阵 R:\n", R)
 print("平移向量 T:\n", T)
 
+baseline_meters = np.linalg.norm(T)
+print(f"基线距离: {baseline_meters:.3f} 米")
+
 # 可选：立体校正
 R1, R2, P1, P2, Q, _, _ = cv2.stereoRectify(
     mtx_l, dist_l,

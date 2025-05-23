@@ -10,7 +10,7 @@ from Dataset.Dataset import UnpressImageDataset
 from models.LiteTactileNet import LiteTactileNet
 from utils.Visualization import *
 
-parser = argparse.ArgumentParser(description="Vision Touch Sensor.")
+parser = argparse.ArgumentParser(description="Vision Touch Sensor model training.")
 
 parser.add_argument("--data_path", type=str, default="Image_Sampling/captured_images", help="Unpressed image data.")
 parser.add_argument("--batch_size", type=int, default=16, help="Value of batch size")
